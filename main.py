@@ -1,7 +1,7 @@
-from PyPDF2 import PdfFileWriter, PdfFileReader, PdfFileMerger
+from PyPDF2 import PdfWriter, PdfReader, PdfFileMerger, PdfWriter
 import sys
 import os
-      
+
 def merge(pdf_list):
   input_pdf = pdf_list[:-1]
   output_pdf = pdf_list[-1]
@@ -25,18 +25,18 @@ def split(input_pdf):
     print("error. file {} not exists".format(input_pdf))
     return False
 
-  inputpdf = PdfFileReader(open(input_pdf, "rb"))
+  inputpdf = PdfReader(open(input_pdf, "rb"))
 
-  for i in range(inputpdf.numPages):
-    output = PdfFileWriter()
-    output.addPage(inputpdf.getPage(i))
+  for i in range(len(inputpdf.pages)):
+    output = PdfWriter()
+    output.add_page(inputpdf.pages[i])
     with open("{}-page{}.pdf".format(input_pdf, i), "wb") as outputStream:
       output.write(outputStream)
 
 def extract(input_pdf, start, end):
-  inputpdf = PdfFileReader(open(input_pdf, "rb"))
+  inputpdf = PdfReader(open(input_pdf, "rb"))
   input_name = os.path.splitext(input_pdf)[0]
-  output = PdfFileWriter()
+  output = PdfWriter()
   output_name = "{}_{}-{}.pdf".format(input_name, start, end)
   outputStream = open(output_name, "wb")
 
@@ -44,7 +44,7 @@ def extract(input_pdf, start, end):
 
   print("extract {} from page {} to page {} to file {}".format(input_pdf, start, end, output_name))
   for i in range(start, end):
-    output.addPage(inputpdf.getPage(i-1))
+    output.add_page(inputpdf.pages[i-1])
   output.write(outputStream)
 
 def insert(original_pdf_path, insert_pdf_path, index):
@@ -55,13 +55,13 @@ def insert(original_pdf_path, insert_pdf_path, index):
     print("error: insert {} not exists".format(insert_pdf_path))
     return False
 
-  org_pdf = PdfFileReader(original_pdf_path)
-  insert_pdf = PdfFileReader(insert_pdf_path)
+  org_pdf = PdfReader(original_pdf_path)
+  insert_pdf = PdfReader(insert_pdf_path)
 
-  new_pdf = PdfFileWriter()
-  new_pdf.appendPagesFromReader(org_pdf)
+  new_pdf = PdfWriter()
+  new_pdf.append_pages_from_reader(org_pdf)
   for page in insert_pdf.pages:
-    new_pdf.insertPage(page, index)
+    new_pdf.insert_page(page, index)
 
   org_pdf_dir, org_pdf_ext = os.path.splitext(original_pdf_path)
   org_pdf_name = os.path.basename(org_pdf_dir)
@@ -83,15 +83,15 @@ def remove(input_pdf_path, start, end):
     print("error: original pdf {} not exists".format(input_pdf_path))
     return False
 
-  new_pdf = PdfFileWriter()
-  input_pdf = PdfFileReader(input_pdf_path)
+  new_pdf = PdfWriter()
+  input_pdf = PdfReader(input_pdf_path)
   new_page_num = 0
-  for i in range(0, input_pdf.getNumPages(),1):
+  for i in range(0, len(input_pdf.pages),1):
     if i < start -1 or i >= end:
-      page = input_pdf.getPage(i)
-      new_pdf.insertPage(page, new_page_num) # append
+      page = input_pdf.pages[i]
+      new_pdf.insert_page(page, new_page_num) # append
       new_page_num += 1
-  
+
   output_path = "output"
   if not os.path.exists(output_path):
     os.mkdir(output_path)
@@ -112,21 +112,21 @@ def replace(input_pdf_path, replace_pdf_path, index):
     print("error: replace pdf {} not exists".format(replace_pdf_path))
     return False
 
-  new_pdf = PdfFileWriter()
-  input_pdf = PdfFileReader(input_pdf_path)
-  replace_pdf = PdfFileReader(replace_pdf_path)
+  new_pdf = PdfWriter()
+  input_pdf = PdfReader(input_pdf_path)
+  replace_pdf = PdfReader(replace_pdf_path)
 
-  if input_pdf.getNumPages() < index: 
-    print("error: {} is greater than the number of pages of input pdf {}".format(index, input_pdf.getNumPages()))
+  if len(input_pdf.pages) < index:
+    print("error: {} is greater than the number of pages of input pdf {}".format(index, len(input_pdf.pages]))
     return False
 
   new_page_num = 0
-  for i in range(0, input_pdf.getNumPages(),1):
+  for i in range(0, len(input_pdf.pages),1):
     if i != index-1:
-      page = input_pdf.getPage(i)
+      page = input_pdf.pages[i]
     else:
-      page = replace_pdf.getPage(0)
-    new_pdf.insertPage(page, new_page_num) # append
+      page = replace_pdf.pages[0]
+    new_pdf.insert_page(page, new_page_num) # append
     new_page_num += 1
 
   output_path = "output"
@@ -150,7 +150,7 @@ def help():
   print(" insert original.pdf insert.pdf insertStartPage")
   print(" remove input.pdf <start page>[:end page]")
   print(" replace input.pdf replace.pdf pageNumber")
-  
+
 if __name__ == "__main__":
   if len(sys.argv) < 2:
     help()
@@ -178,7 +178,7 @@ if __name__ == "__main__":
     else:
       input_pdf = sys.argv[2]
       page_range = sys.argv[3].split(":")
-      start = int(page_range[0]) 
+      start = int(page_range[0])
       end = int(page_range[1]) if len(page_range) > 1 else start
 
       extract(input_pdf, start, end)
@@ -193,7 +193,7 @@ if __name__ == "__main__":
       index = int(sys.argv[4])
 
       insert(org_pdf, int_pdf, index)
-  
+
   elif sys.argv[1] == "remove":
     if len(sys.argv) < 4:
       help()
@@ -201,7 +201,7 @@ if __name__ == "__main__":
     else:
       input_pdf = sys.argv[2]
       page_range = sys.argv[3].split(":")
-      start = int(page_range[0]) 
+      start = int(page_range[0])
       end = int(page_range[1]) if len(page_range) > 1 else start
 
       remove(input_pdf, start, end)
